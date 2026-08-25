@@ -14,9 +14,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterator
 
-from google.auth.transport.requests import Request
-from google.oauth2 import service_account
-from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -24,6 +21,7 @@ from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_ex
 
 from app.core.config import get_settings
 from app.models import Attachment, MailMessage, SignatureImage
+from app.services.google_auth import GoogleAuthError, load_credentials
 
 logger = logging.getLogger(__name__)
 
@@ -49,29 +47,12 @@ class GmailError(RuntimeError):
 # --------------------------------------------------------------------------
 
 def build_service():
-    """サービスアカウント（ドメイン委任）か OAuth トークンのどちらかで作る。"""
-    settings = get_settings()
-
-    if settings.google_service_account_json and settings.google_service_account_json.exists():
-        credentials = service_account.Credentials.from_service_account_file(
-            str(settings.google_service_account_json), scopes=SCOPES
-        )
-        if settings.google_impersonate_subject:
-            credentials = credentials.with_subject(settings.google_impersonate_subject)
-        return build("gmail", "v1", credentials=credentials, cache_discovery=False)
-
-    token_path = settings.google_oauth_token_path
-    if token_path and token_path.exists():
-        credentials = Credentials.from_authorized_user_file(str(token_path), SCOPES)
-        if credentials.expired and credentials.refresh_token:
-            credentials.refresh(Request())
-            token_path.write_text(credentials.to_json(), encoding="utf-8")
-        return build("gmail", "v1", credentials=credentials, cache_discovery=False)
-
-    raise GmailError(
-        "Gmail の認証情報がありません。GOOGLE_SERVICE_ACCOUNT_JSON か "
-        "GOOGLE_OAUTH_TOKEN_PATH を設定してください"
-    )
+    """認証情報の解決は google_auth に任せ、ここは組み立てだけにする。"""
+    try:
+        credentials = load_credentials(SCOPES)
+    except GoogleAuthError as exc:
+        raise GmailError(str(exc)) from exc
+    return build("gmail", "v1", credentials=credentials, cache_discovery=False)
 
 
 # --------------------------------------------------------------------------

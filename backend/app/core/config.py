@@ -28,10 +28,14 @@ class Settings(BaseSettings):
     property_fields_path: Path = REPO_ROOT / "config" / "property_fields.json"
 
     # ---- Google 共通 ----
-    google_service_account_json: Path | None = None
+    # パスでも JSON の中身でも受け取れる。マネージド環境では変数に
+    # 中身を貼るしかないため（str で受けて services/google_auth.py が判別する）。
+    google_service_account_json: str | None = None
     google_impersonate_subject: str | None = None
-    google_oauth_client_secrets: Path | None = None
-    google_oauth_token_path: Path | None = None
+    google_oauth_client_secrets: str | None = None
+    google_oauth_token_path: str | None = None
+    # 個人の Gmail 向け。tools/gmail_authorize.py が出力した JSON を入れる。
+    google_oauth_token_json: str | None = None
 
     # ---- Gmail（①）----
     gmail_label_target: str = "物件情報"

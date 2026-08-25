@@ -11,12 +11,11 @@ from functools import lru_cache
 from typing import Any
 
 import yaml
-from google.oauth2 import service_account
-from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
 from app.core.config import get_settings
+from app.services.google_auth import GoogleAuthError, load_credentials
 
 logger = logging.getLogger(__name__)
 
@@ -39,18 +38,11 @@ def load_column_map() -> dict[str, Any]:
 
 
 def build_service():
-    settings = get_settings()
-    if settings.google_service_account_json and settings.google_service_account_json.exists():
-        credentials = service_account.Credentials.from_service_account_file(
-            str(settings.google_service_account_json), scopes=SCOPES
-        )
-        return build("sheets", "v4", credentials=credentials, cache_discovery=False)
-    if settings.google_oauth_token_path and settings.google_oauth_token_path.exists():
-        credentials = Credentials.from_authorized_user_file(
-            str(settings.google_oauth_token_path), SCOPES
-        )
-        return build("sheets", "v4", credentials=credentials, cache_discovery=False)
-    raise SheetsError("Google の認証情報がありません")
+    try:
+        return build("sheets", "v4", credentials=load_credentials(SCOPES),
+                     cache_discovery=False)
+    except GoogleAuthError as exc:
+        raise SheetsError(str(exc)) from exc
 
 
 _retry = retry(
