@@ -42,7 +42,11 @@ def dispatch(session, job, task, *args) -> None:
     「実行ボタンを押したまま固まる」という一番困る形になる。原因が
     読めるエラーにして即座に返し、ジョブも失敗として記録する。
     """
-    redis_url = get_settings().redis_url
+    redis_url = get_settings().broker_url
+    if not redis_url:
+        # 参照変数が空に解決された場合など。「接続できない」ではなく
+        # 「設定されていない」と伝えないと、Redis を疑って時間を溶かす。
+        _fail(session, job, "", "未設定")
     if not broker_reachable(redis_url):
         _fail(session, job, redis_url, "TCP 接続できません")
 
@@ -52,13 +56,24 @@ def dispatch(session, job, task, *args) -> None:
         _fail(session, job, redis_url, str(exc))
 
 
-def _fail(session, job, redis_url: str, cause: str) -> None:
+def failure_detail(redis_url: str) -> str:
+    """投入できなかった理由。画面にそのまま出るので、次の一手が分かる文にする。"""
+    if not redis_url:
+        return (
+            "ジョブを投入できませんでした。REDIS_URL が設定されていません。"
+            "参照変数が空に解決されている場合は、REDISHOST / REDISPORT / "
+            "REDISPASSWORD を個別に設定すると組み立てられます。"
+        )
     # 認証情報を含みうるので接続先だけ出す
     target = redis_url.split("@")[-1] if "@" in redis_url else redis_url
-    detail = (
+    return (
         f"ジョブを投入できませんでした。ワーカーのキュー（{target}）へ接続できません。"
         "REDIS_URL の設定と Redis サービスの稼働を確認してください。"
     )
+
+
+def _fail(session, job, redis_url: str, cause: str) -> None:
+    detail = failure_detail(redis_url)
     logger.error("%s: %s", detail, cause)
     repository.finish_job(session, job.id, detail)
     session.commit()

@@ -65,6 +65,13 @@ class Settings(BaseSettings):
     redis_url: str = "redis://redis:6379/0"
     cors_origins: str = "http://localhost:3000"
 
+    # REDIS_URL が空になる環境向けの部品。Railway の Redis は個別の変数も
+    # 提供しており、参照変数の解決に失敗しても、こちらは埋まることがある。
+    redishost: str = ""
+    redisport: int = 6379
+    redisuser: str = ""
+    redispassword: str = ""
+
     @field_validator("database_url", mode="after")
     @classmethod
     def _use_psycopg3(cls, url: str) -> str:
@@ -80,6 +87,24 @@ class Settings(BaseSettings):
             if url.startswith(prefix):
                 return "postgresql+psycopg://" + url[len(prefix):]
         return url
+
+    @property
+    def broker_url(self) -> str:
+        """ジョブキューの接続先。
+
+        REDIS_URL をそのまま使うのが基本。ただしマネージド環境の参照変数は
+        空文字に解決されることがあり（Railway では内部ドメインが空になる
+        事象が報告されている）、その場合は個別の変数から組み立てる。
+        どちらも無ければ空文字を返し、呼び出し側で「未設定」として扱う。
+        """
+        if self.redis_url.strip():
+            return self.redis_url.strip()
+        if self.redishost.strip():
+            credentials = ""
+            if self.redispassword:
+                credentials = f"{self.redisuser or 'default'}:{self.redispassword}@"
+            return f"redis://{credentials}{self.redishost.strip()}:{self.redisport}/0"
+        return ""
 
     @property
     def template_paths(self) -> dict[str, Path]:

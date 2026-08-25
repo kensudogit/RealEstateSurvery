@@ -124,7 +124,31 @@ API は `backend/docker-entrypoint.sh` から起動する。DB の待機・マ�
 | `まだ接続できません: ... Name or service not known` | DB のホスト名が解決できない。別の環境の DB を指していないか確認 |
 | `まだ接続できません: ... connection refused` | DB がまだ起動していない。60 秒待って諦める |
 | `alembic` のエラー | マイグレーションの失敗。内容がそのまま出る |
+| `queue=未設定` | `REDIS_URL` が空。参照変数が解決できていない（下記） |
 | ここまで出ずヘルスチェックだけ落ちる | 待ち受けアドレスの可能性。`BIND_HOST=::` を設定して再試行する（下記） |
+
+### REDIS_URL が空になるとき
+
+`REDIS_URL=${{Redis.REDIS_URL}}` を設定したのに空になる場合、原因は次のどれか。
+
+1. **サービス名が `Redis` ではない** — 参照名はサービス名と完全一致が必要。
+   Redis サービスの Settings で実際の名前を確認し、`${{<実際の名前>.REDIS_URL}}` にする
+2. **Redis テンプレートから作っていない** — `redis:7-alpine` を Docker イメージとして
+   直接追加した場合、`REDIS_URL` という変数はそもそも存在しない。
+   Railway の Redis テンプレートから作り直すか、下の 3 の方法で直接指定する
+3. **内部ドメインが空に解決される** — Railway 側の既知の事象。個別の変数で回避できる
+
+3 の回避策として、`REDIS_URL` の代わりに個別の変数を設定すると URL を組み立てる。
+
+```
+REDISHOST     = ${{Redis.REDISHOST}}
+REDISPORT     = ${{Redis.REDISPORT}}
+REDISPASSWORD = ${{Redis.REDISPASSWORD}}
+```
+
+それでも解決しないときは、Redis サービスの Variables に表示されている値を
+そのまま貼る（参照変数を使わない）。起動時のログに `queue=` の行が出るので、
+何が使われているかはそこで確認できる。
 
 `BIND_HOST` は待ち受けアドレスの切り替え。既定は `0.0.0.0` で、公開トラフィックは
 これで受けられる。ヘルスチェックを IPv6 の内部ネットワークで行う構成の場合のみ

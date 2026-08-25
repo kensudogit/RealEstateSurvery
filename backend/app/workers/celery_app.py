@@ -12,7 +12,8 @@ from app.core.config import get_settings
 
 settings = get_settings()
 
-celery_app = Celery("realestate", broker=settings.redis_url, backend=settings.redis_url)
+broker = settings.broker_url
+celery_app = Celery("realestate", broker=broker, backend=broker)
 celery_app.conf.update(
     task_serializer="json",
     result_serializer="json",

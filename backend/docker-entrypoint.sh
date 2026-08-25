@@ -19,6 +19,17 @@ DB_TARGET=$(printf '%s' "${DATABASE_URL:-未設定}" | sed -E 's#^([a-z+]+)://[^
 echo "[entrypoint] host=${HOST} port=${PORT}"
 echo "[entrypoint] database=${DB_TARGET}"
 
+# キューの接続先も出す。参照変数が空に解決される事故があるので、
+# 「設定したのに空」をログだけで判別できるようにしておく。
+if [ -n "${REDIS_URL}" ]; then
+    REDIS_TARGET=$(printf '%s' "${REDIS_URL}" | sed -E 's#^([a-z]+)://[^@]*@#://***@#')
+elif [ -n "${REDISHOST}" ]; then
+    REDIS_TARGET="redis://***@${REDISHOST}:${REDISPORT:-6379}/0（個別変数から組み立て）"
+else
+    REDIS_TARGET="未設定（実行ボタンは使えません）"
+fi
+echo "[entrypoint] queue=${REDIS_TARGET}"
+
 if [ -z "${DATABASE_URL}" ]; then
     echo "[entrypoint] DATABASE_URL が設定されていません。" >&2
     echo "[entrypoint] Railway なら DATABASE_URL=\${{Postgres.DATABASE_URL}} を設定してください。" >&2
