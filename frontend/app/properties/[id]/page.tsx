@@ -26,6 +26,8 @@ export default function PropertyReview({ params }: { params: Promise<{ id: strin
   const [jobId, setJobId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [preview, setPreview] = useState<number | null>(null);
+  // 原本プレビューのキャッシュ回避用。画面を開いた時刻で固定する。
+  const [cacheToken] = useState(() => Date.now());
 
   useEffect(() => {
     Promise.all([api.getProperty(propertyId), api.fieldSpecs()])
@@ -188,7 +190,7 @@ export default function PropertyReview({ params }: { params: Promise<{ id: strin
         {preview !== null && (
           <iframe
             title="原本"
-            src={api.sourceFileUrl(propertyId, preview)}
+            src={api.sourceFileUrl(propertyId, preview, cacheToken)}
             style={{ width: "100%", height: 640, marginTop: 12, border: "1px solid var(--border)" }}
           />
         )}

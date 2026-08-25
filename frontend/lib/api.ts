@@ -67,8 +67,17 @@ export const api = {
 
   getJob: (id: number) => request<Job>(`/jobs/${id}`),
 
-  sourceFileUrl: (propertyId: number, index: number) =>
-    `${API_BASE}/properties/${propertyId}/source/${index}`,
+  /**
+   * 原本のプレビュー URL。
+   *
+   * version を付けるのは、ブラウザが Content-Disposition ごと
+   * レスポンスをキャッシュするため。ダウンロード扱いだった頃の
+   * キャッシュが残っていると、サーバ側を直しても iframe が
+   * 真っ白のままになる。画面を開くたびに新しい値を渡す。
+   */
+  sourceFileUrl: (propertyId: number, index: number, version?: number | string) =>
+    `${API_BASE}/properties/${propertyId}/source/${index}` +
+    (version === undefined ? "" : `?v=${encodeURIComponent(String(version))}`),
 
   documentsUrl: (propertyId: number) => `${API_BASE}/documents/by-property/${propertyId}`,
 };

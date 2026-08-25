@@ -124,4 +124,18 @@ def get_source_file(property_id: int, index: int,
     path = Path(attachments[index].storage_path)
     if not path.exists():
         raise HTTPException(status_code=410, detail="ファイルが失われています")
-    return FileResponse(path, media_type=attachments[index].mime_type, filename=path.name)
+
+    # 既定では Content-Disposition が attachment になり、ブラウザが
+    # ダウンロード扱いにして iframe が真っ白になる。ここは画面内で開いて
+    # 値を突き合わせるためのものなので inline を明示する。
+    # filename も渡しておくと、保存されたときに元の名前が残る。
+    return FileResponse(
+        path,
+        media_type=attachments[index].mime_type,
+        filename=path.name,
+        content_disposition_type="inline",
+        # ブラウザは Content-Disposition ごとキャッシュする。以前
+        # attachment を返していた時期のキャッシュが残っていると、
+        # ヘッダを直しても iframe が真っ白のままになる。毎回再検証させる。
+        headers={"Cache-Control": "private, max-age=0, must-revalidate"},
+    )

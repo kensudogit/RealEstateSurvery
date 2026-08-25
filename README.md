@@ -148,8 +148,23 @@ API は `backend/docker-entrypoint.sh` から起動する。DB の待機・マ�
 要確認フラグの見え方、根拠の表示、修正 → 再生成の導線を先に確認できます。
 
 ```bash
-docker compose exec backend python /app/tools/seed_sample.py
+docker compose exec backend python /srv/tools/seed_sample.py
 ```
+
+`docker compose up` では既定で投入される（`SEED_SAMPLE_DATA: "true"`）。
+Railway などシェルを開きにくい環境では、サービスに変数を足すだけでよい。
+
+```
+SEED_SAMPLE_DATA = true
+```
+
+既にデータがあれば何もしないので、付けっぱなしでも実データを壊さない。
+入れ直したいときは `--reset`、実データがあっても足したいときは `--force`。
+
+投入されるのは 6 件。売買・賃貸・一棟・土地・事務所をひととおり含み、
+万円→円の換算漏れや利回りの不整合を仕込んであるので、要確認フラグと
+検算の見え方をそのまま確認できる。添付にはサンプルの販売図面画像が
+付くので、レビュー画面の「原本」から実際に図面が開く。
 
 テンプレートの雛形も生成できます（営業が使っている pptx に差し替えるまでの土台）。
 

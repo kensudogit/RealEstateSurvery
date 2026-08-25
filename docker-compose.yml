@@ -36,6 +36,9 @@ services:
     environment:
       DATABASE_URL: postgresql+psycopg://app:app@postgres:5432/realestate
       REDIS_URL: redis://redis:6379/0
+      # 認証情報が揃う前に画面を触れるよう、既定でサンプルを入れておく。
+      # 既にデータがあれば何もしない。
+      SEED_SAMPLE_DATA: "true"
     volumes:
       # REPO_ROOT が /srv を指すので、ルートと同じ相対配置でマウントする。
       - ./backend:/srv/backend

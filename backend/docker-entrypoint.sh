@@ -64,6 +64,15 @@ if [ ! -w "${ATTACHMENTS}" ]; then
     exit 1
 fi
 
+# サンプルデータの投入。
+#
+# マネージド環境ではシェルを開きにくいので、変数だけで投入できるようにする。
+# 既にデータがあれば何もしないので、付けっぱなしでも実データを壊さない。
+if [ "${SEED_SAMPLE_DATA}" = "true" ]; then
+    echo "[entrypoint] サンプルデータを確認します"
+    python /srv/tools/seed_sample.py || echo "[entrypoint] サンプル投入に失敗しました（起動は続行します）"
+fi
+
 # ワーカーを同じコンテナで動かす。
 #
 # Railway ではボリュームをサービス間で共有できない（1 サービス 1 ボリューム）。
