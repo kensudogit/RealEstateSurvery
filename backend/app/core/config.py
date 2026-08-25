@@ -5,7 +5,13 @@ from __future__ import annotations
 from functools import lru_cache
 from pathlib import Path
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# backend/ の 1 つ上がリポジトリのルート。config/ と templates/ の既定値を
+# ここから組み立てる。絶対パスを直書きすると、Docker・ローカル・Railway で
+# 配置が変わったときに必ずどれかが壊れる。
+REPO_ROOT = Path(__file__).resolve().parents[3]
 
 
 class Settings(BaseSettings):
@@ -19,7 +25,7 @@ class Settings(BaseSettings):
     prompt_version: str = "v1"
 
     # ---- 項目定義 ----
-    property_fields_path: Path = Path("/app/config/property_fields.json")
+    property_fields_path: Path = REPO_ROOT / "config" / "property_fields.json"
 
     # ---- Google 共通 ----
     google_service_account_json: Path | None = None
@@ -38,7 +44,7 @@ class Settings(BaseSettings):
     sheets_spreadsheet_id: str = ""
     sheets_worksheet_name: str = "物件一覧"
     sheets_header_row: int = 1
-    sheets_column_map: Path = Path("/app/config/column_map.yaml")
+    sheets_column_map: Path = REPO_ROOT / "config" / "column_map.yaml"
 
     # ---- Maps（④）----
     google_maps_api_key: str = ""
@@ -48,8 +54,8 @@ class Settings(BaseSettings):
     geo_cache_ttl_days: int = 90
 
     # ---- PPTX（⑤）----
-    pptx_template_mysoku: Path = Path("/app/templates/mysoku_a4.pptx")
-    pptx_template_summary: Path = Path("/app/templates/summary_a4.pptx")
+    pptx_template_mysoku: Path = REPO_ROOT / "templates" / "mysoku_a4.pptx"
+    pptx_template_summary: Path = REPO_ROOT / "templates" / "summary_a4.pptx"
     pptx_output_dir: Path = Path("/data/documents")
     pptx_image_max_px: int = 1600
     pptx_image_jpeg_quality: int = 85
@@ -58,6 +64,22 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+psycopg://app:app@postgres:5432/realestate"
     redis_url: str = "redis://redis:6379/0"
     cors_origins: str = "http://localhost:3000"
+
+    @field_validator("database_url", mode="after")
+    @classmethod
+    def _use_psycopg3(cls, url: str) -> str:
+        """接続 URL のドライバ指定を psycopg3 に揃える。
+
+        Railway や Heroku が配る DATABASE_URL は driver 無しの
+        `postgresql://` 形式で、SQLAlchemy はこれを psycopg2 と解釈する。
+        本プロジェクトが入れているのは psycopg3 なので、そのままだと
+        起動時に ModuleNotFoundError: psycopg2 で落ちる。
+        `postgres://` 形式（Heroku の旧表記）も同時に吸収する。
+        """
+        for prefix in ("postgresql://", "postgres://"):
+            if url.startswith(prefix):
+                return "postgresql+psycopg://" + url[len(prefix):]
+        return url
 
     @property
     def template_paths(self) -> dict[str, Path]:
