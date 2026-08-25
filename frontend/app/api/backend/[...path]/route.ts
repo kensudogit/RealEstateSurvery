@@ -24,16 +24,27 @@ export const runtime = "nodejs";
 const API_BASE_URL = process.env.API_BASE_URL ?? "http://localhost:8000";
 
 // ホップバイホップのヘッダは中継しない。転送すると接続が壊れる。
-const STRIPPED = new Set([
+const HOP_BY_HOP = [
   "connection", "keep-alive", "transfer-encoding", "upgrade",
   "proxy-authenticate", "proxy-authorization", "te", "trailer",
   "host", "content-length",
-]);
+];
 
-function filterHeaders(source: Headers): Headers {
+const STRIPPED_REQUEST = new Set(HOP_BY_HOP);
+
+// レスポンスでは content-encoding も落とす。
+//
+// Node の fetch は gzip / br のレスポンスを自動で展開して body を返すが、
+// headers には content-encoding が残ったままになる。それをそのまま
+// 転送すると、ブラウザは展開済みのデータをもう一度展開しようとして失敗し、
+// 本文が空になる。デプロイ先のエッジが一定サイズ以上だけ圧縮するため、
+// 「小さい応答は通るのに大きい応答だけ空になる」という分かりにくい形で出た。
+const STRIPPED_RESPONSE = new Set([...HOP_BY_HOP, "content-encoding"]);
+
+function filterHeaders(source: Headers, stripped: Set<string>): Headers {
   const result = new Headers();
   source.forEach((value, key) => {
-    if (!STRIPPED.has(key.toLowerCase())) result.append(key, value);
+    if (!stripped.has(key.toLowerCase())) result.append(key, value);
   });
   return result;
 }
@@ -46,7 +57,7 @@ async function proxy(request: NextRequest, path: string[]): Promise<Response> {
   try {
     upstream = await fetch(target, {
       method: request.method,
-      headers: filterHeaders(request.headers),
+      headers: filterHeaders(request.headers, STRIPPED_REQUEST),
       body: request.method === "GET" || request.method === "HEAD"
         ? undefined
         : await request.arrayBuffer(),
@@ -72,7 +83,7 @@ async function proxy(request: NextRequest, path: string[]): Promise<Response> {
     );
   }
 
-  const headers = filterHeaders(upstream.headers);
+  const headers = filterHeaders(upstream.headers, STRIPPED_RESPONSE);
   // このレスポンスを確かに中継したことを示す印。デプロイ先で本文が
   // 空になるなどしたとき、プロキシを通ったのか手前で握られたのかを
   // ヘッダだけで切り分けられる。接続先はホストのみ（認証情報は出さない）。
