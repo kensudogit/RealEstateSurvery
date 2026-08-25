@@ -71,25 +71,46 @@ def process_mail(session: Session, job_id: int, mail_id: int,
 
     payload = repository.to_payload(property_)
 
+    # ③転記と⑤資料生成は互いに独立している。シートの認証が切れているだけで
+    # 資料が作られない、という止まり方をしないよう、片方の失敗で他方を
+    # 打ち切らない。両方の結果を記録したうえで、失敗があればジョブ全体は
+    # 失敗として報告する。
+    failures: list[StepFailed] = []
+
     if sync_sheet:
-        with step(session, job_id, mail_id, "sync") as detail:
-            detail["row"] = sheets_service.sync(payload)
+        try:
+            with step(session, job_id, mail_id, "sync") as detail:
+                detail["row"] = sheets_service.sync(payload)
+        except StepFailed as exc:
+            failures.append(exc)
 
     if render:
-        with step(session, job_id, mail_id, "render") as detail:
-            rendered = []
-            for template_key in TEMPLATE_KEYS:
-                try:
-                    output = pptx_service.render(payload, template_key)
-                except pptx_service.RenderError as exc:
-                    # テンプレート未配置は運用初期によくある。他の段は通す。
-                    logger.warning("資料生成をスキップ (%s): %s", template_key, exc)
-                    continue
-                repository.record_document(session, property_.id, output)
-                rendered.append(output["path"])
-            detail["documents"] = rendered
+        try:
+            _render_documents(session, job_id, mail_id, property_.id, payload)
+        except StepFailed as exc:
+            failures.append(exc)
+
+    if failures:
+        raise failures[0]
 
     return property_.id
+
+
+def _render_documents(session: Session, job_id: int, mail_id: int | None,
+                      property_id: int, payload: dict, mark_review: bool = True) -> list[str]:
+    with step(session, job_id, mail_id, "render") as detail:
+        rendered: list[str] = []
+        for template_key in TEMPLATE_KEYS:
+            try:
+                output = pptx_service.render(payload, template_key, mark_review=mark_review)
+            except pptx_service.RenderError as exc:
+                # テンプレート未配置は運用初期によくある。他のテンプレートは通す。
+                logger.warning("資料生成をスキップ (%s): %s", template_key, exc)
+                continue
+            repository.record_document(session, property_id, output)
+            rendered.append(output["path"])
+        detail["documents"] = rendered
+    return rendered
 
 
 def run_ingest(session: Session, job_id: int, limit: int | None = None,
@@ -155,25 +176,22 @@ def rerender(session: Session, job_id: int, property_id: int,
 
     payload = repository.to_payload(property_)
     paths: list[str] = []
+    failures: list[StepFailed] = []
 
+    # 転記と資料生成は独立。シートが失敗しても資料は作る。
     try:
         with step(session, job_id, property_.mail_id, "sync"):
             sheets_service.sync(payload)
-        with step(session, job_id, property_.mail_id, "render") as detail:
-            for template_key in TEMPLATE_KEYS:
-                try:
-                    output = pptx_service.render(payload, template_key, mark_review=mark_review)
-                except pptx_service.RenderError as exc:
-                    logger.warning("資料生成をスキップ (%s): %s", template_key, exc)
-                    continue
-                repository.record_document(session, property_id, output)
-                paths.append(output["path"])
-            detail["documents"] = paths
     except StepFailed as exc:
-        repository.finish_job(session, job_id, str(exc))
-        session.commit()
-        return paths
+        failures.append(exc)
 
-    repository.finish_job(session, job_id)
+    try:
+        paths = _render_documents(
+            session, job_id, property_.mail_id, property_id, payload, mark_review
+        )
+    except StepFailed as exc:
+        failures.append(exc)
+
+    repository.finish_job(session, job_id, str(failures[0]) if failures else None)
     session.commit()
     return paths
