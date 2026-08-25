@@ -1,0 +1,90 @@
+{
+  "version": "1.0.0",
+  "description": "物件情報の抽出項目定義。抽出用 JSON Schema・スプレッドシート列・PPTX プレースホルダはすべてこのファイルから生成する。項目を足すときはここだけを直す。",
+  "review_confidence_threshold": 0.75,
+  "fields": [
+    { "key": "property_name",   "label": "物件名",       "type": "string",  "required": true,  "sheet_column": "物件名",   "pptx": "property_name",   "note": "マンション名・ビル名。無ければ所在地から仮称を作らず null" },
+    { "key": "deal_type",       "label": "取引種別",     "type": "enum",    "required": true,  "enum": ["売買", "賃貸"], "sheet_column": "取引種別", "pptx": "deal_type" },
+    { "key": "property_type",   "label": "物件種別",     "type": "enum",    "required": true,  "enum": ["区分マンション", "一棟マンション", "一棟アパート", "戸建", "土地", "事務所", "店舗", "倉庫・工場", "その他"], "sheet_column": "種別", "pptx": "property_type" },
+
+    { "key": "address",         "label": "所在地",       "type": "string",  "required": true,  "sheet_column": "所在地",   "pptx": "address", "note": "都道府県から。号までわからなければ番地まででよい" },
+    { "key": "address_display", "label": "表示用所在地", "type": "string",  "required": false, "derived": true, "sheet_column": "表示用所在地", "pptx": "address_display", "note": "広告表記用に丁目までへ丸めた住所。geo サービスが生成" },
+    { "key": "latitude",        "label": "緯度",         "type": "number",  "required": false, "derived": true, "sheet_column": "緯度" },
+    { "key": "longitude",       "label": "経度",         "type": "number",  "required": false, "derived": true, "sheet_column": "経度" },
+
+    { "key": "price",              "label": "価格",         "type": "integer", "unit": "円", "required": false, "sheet_column": "価格(円)",   "pptx": "price",         "note": "売買のみ。万円表記は円に換算する" },
+    { "key": "monthly_rent",       "label": "賃料",         "type": "integer", "unit": "円/月", "required": false, "sheet_column": "賃料(円)", "pptx": "monthly_rent",  "note": "賃貸のみ" },
+    { "key": "management_fee",     "label": "管理費",       "type": "integer", "unit": "円/月", "required": false, "sheet_column": "管理費(円)", "pptx": "management_fee" },
+    { "key": "repair_reserve",     "label": "修繕積立金",   "type": "integer", "unit": "円/月", "required": false, "sheet_column": "修繕積立金(円)", "pptx": "repair_reserve" },
+    { "key": "deposit",            "label": "敷金・保証金", "type": "string",  "required": false, "sheet_column": "敷金" },
+    { "key": "key_money",          "label": "礼金",         "type": "string",  "required": false, "sheet_column": "礼金" },
+    { "key": "gross_yield",        "label": "表面利回り",   "type": "number",  "unit": "%", "required": false, "sheet_column": "表面利回り(%)", "pptx": "gross_yield" },
+    { "key": "net_yield",          "label": "実質利回り",   "type": "number",  "unit": "%", "required": false, "sheet_column": "実質利回り(%)" },
+    { "key": "annual_income_current", "label": "現況年収",  "type": "integer", "unit": "円/年", "required": false, "sheet_column": "現況年収(円)" },
+    { "key": "annual_income_full",    "label": "満室想定年収", "type": "integer", "unit": "円/年", "required": false, "sheet_column": "満室想定年収(円)" },
+    { "key": "occupancy_rate",     "label": "入居率",       "type": "number",  "unit": "%", "required": false, "sheet_column": "入居率(%)" },
+
+    { "key": "land_area_sqm",      "label": "土地面積",     "type": "number",  "unit": "㎡", "required": false, "sheet_column": "土地面積(㎡)", "pptx": "land_area_sqm", "note": "坪表記は㎡へ換算（1坪=3.305785㎡）" },
+    { "key": "building_area_sqm",  "label": "建物面積",     "type": "number",  "unit": "㎡", "required": false, "sheet_column": "建物面積(㎡)", "pptx": "building_area_sqm" },
+    { "key": "exclusive_area_sqm", "label": "専有面積",     "type": "number",  "unit": "㎡", "required": false, "sheet_column": "専有面積(㎡)", "pptx": "exclusive_area_sqm" },
+    { "key": "balcony_area_sqm",   "label": "バルコニー面積", "type": "number", "unit": "㎡", "required": false, "sheet_column": "バルコニー(㎡)" },
+    { "key": "floor_plan",         "label": "間取り",       "type": "string",  "required": false, "sheet_column": "間取り", "pptx": "floor_plan", "note": "2LDK / 1K など。全角英数字は半角へ正規化" },
+    { "key": "built_year_month",   "label": "築年月",       "type": "date_ym", "required": false, "sheet_column": "築年月", "pptx": "built_year_month", "note": "和暦は西暦 YYYY-MM へ正規化" },
+    { "key": "structure",          "label": "構造",         "type": "enum",    "required": false, "enum": ["RC", "SRC", "S", "軽量鉄骨", "木造", "その他"], "sheet_column": "構造", "pptx": "structure" },
+    { "key": "floors_total",       "label": "総階数",       "type": "integer", "required": false, "sheet_column": "総階数", "pptx": "floors_total" },
+    { "key": "floor_of_unit",      "label": "所在階",       "type": "string",  "required": false, "sheet_column": "所在階", "pptx": "floor_of_unit", "note": "地下は B1 と表記" },
+    { "key": "units_total",        "label": "総戸数",       "type": "integer", "required": false, "sheet_column": "総戸数", "pptx": "units_total" },
+    { "key": "land_rights",        "label": "権利形態",     "type": "enum",    "required": false, "enum": ["所有権", "借地権", "定期借地権", "その他"], "sheet_column": "権利形態" },
+    { "key": "use_district",       "label": "用途地域",     "type": "string",  "required": false, "sheet_column": "用途地域" },
+    { "key": "building_coverage_ratio", "label": "建ぺい率", "type": "number", "unit": "%", "required": false, "sheet_column": "建ぺい率(%)" },
+    { "key": "floor_area_ratio",   "label": "容積率",       "type": "number",  "unit": "%", "required": false, "sheet_column": "容積率(%)" },
+    { "key": "road_frontage",      "label": "接道状況",     "type": "string",  "required": false, "sheet_column": "接道" },
+    { "key": "parking",            "label": "駐車場",       "type": "string",  "required": false, "sheet_column": "駐車場" },
+    { "key": "current_status",     "label": "現況",         "type": "enum",    "required": false, "enum": ["空室", "賃貸中", "居住中", "更地", "建築中", "その他"], "sheet_column": "現況", "pptx": "current_status" },
+    { "key": "delivery_time",      "label": "引渡時期",     "type": "string",  "required": false, "sheet_column": "引渡時期", "pptx": "delivery_time" },
+
+    { "key": "transaction_type",   "label": "取引態様",     "type": "enum",    "required": false, "enum": ["専属専任媒介", "専任媒介", "一般媒介", "売主", "代理", "その他"], "sheet_column": "取引態様", "pptx": "transaction_type" },
+    { "key": "source_company",     "label": "元付会社",     "type": "string",  "required": false, "sheet_column": "元付会社", "pptx": "source_company", "note": "署名・レターヘッドから拾う" },
+    { "key": "source_contact",     "label": "担当者",       "type": "string",  "required": false, "sheet_column": "担当者" },
+    { "key": "source_phone",       "label": "連絡先電話",   "type": "string",  "required": false, "sheet_column": "電話" },
+    { "key": "source_email",       "label": "連絡先メール", "type": "string",  "required": false, "sheet_column": "メール" },
+    { "key": "remarks",            "label": "備考",         "type": "string",  "required": false, "sheet_column": "備考", "pptx": "remarks", "note": "特記事項・条件。原文のまま。要約しない" }
+  ],
+  "repeated_fields": {
+    "stations": {
+      "label": "交通",
+      "max_items": 3,
+      "note": "抽出値があればそれを優先し、無い場合のみ geo サービスで補完する。補完したものは source='geo'",
+      "item_fields": [
+        { "key": "line",          "label": "路線",   "type": "string" },
+        { "key": "station",       "label": "駅名",   "type": "string" },
+        { "key": "walk_minutes",  "label": "徒歩分", "type": "integer", "note": "道路距離80mにつき1分・端数切り上げ" },
+        { "key": "distance_m",    "label": "道路距離", "type": "integer", "unit": "m" },
+        { "key": "bus_minutes",   "label": "バス分", "type": "integer" },
+        { "key": "source",        "label": "取得元", "type": "enum", "enum": ["extracted", "geo"] }
+      ],
+      "sheet_columns": ["沿線1", "駅1", "徒歩1(分)", "沿線2", "駅2", "徒歩2(分)", "沿線3", "駅3", "徒歩3(分)"],
+      "pptx": ["access_1", "access_2", "access_3"]
+    },
+    "images": {
+      "label": "物件画像",
+      "max_items": 8,
+      "note": "添付・PDF埋め込み画像から抽出。role は PPTX の配置枠名と対応する",
+      "item_fields": [
+        { "key": "role",    "label": "種別", "type": "enum", "enum": ["exterior", "floor_plan", "map", "interior", "view", "other"] },
+        { "key": "file",    "label": "ファイル", "type": "string" },
+        { "key": "caption", "label": "キャプション", "type": "string" }
+      ],
+      "pptx_frames": ["IMG:exterior", "IMG:floor_plan", "IMG:map", "IMG:interior"]
+    }
+  },
+  "metadata_fields": [
+    { "key": "gmail_message_id", "label": "メールID",   "type": "string", "sheet_column": "メールID" },
+    { "key": "email_subject",    "label": "件名",       "type": "string", "sheet_column": "件名" },
+    { "key": "email_from",       "label": "差出人",     "type": "string", "sheet_column": "差出人" },
+    { "key": "received_at",      "label": "受信日時",   "type": "string", "sheet_column": "受信日時" },
+    { "key": "source_files",     "label": "元ファイル", "type": "string", "sheet_column": "元ファイル" },
+    { "key": "review_status",    "label": "確認状態",   "type": "enum", "enum": ["要確認", "確認済", "自動確定"], "sheet_column": "確認状態" },
+    { "key": "review_fields",    "label": "要確認項目", "type": "string", "sheet_column": "要確認項目", "note": "要確認になった項目の日本語ラベルをカンマ区切りで" }
+  ]
+}

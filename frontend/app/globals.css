@@ -1,0 +1,85 @@
+:root {
+  --bg: #f7f8fa;
+  --panel: #ffffff;
+  --border: #e2e5ea;
+  --text: #1c2024;
+  --muted: #6b7280;
+  --accent: #2563eb;
+  --review-bg: #fff4d6;
+  --review-border: #e0a800;
+  --review-text: #7a5b00;
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+a { color: var(--accent); }
+
+.container { max-width: 1100px; margin: 0 auto; padding: 24px 20px 64px; }
+
+header.site {
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 20px;
+  display: flex;
+  gap: 20px;
+  align-items: baseline;
+}
+header.site h1 { font-size: 16px; margin: 0; }
+header.site nav a { margin-right: 16px; text-decoration: none; }
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+button {
+  font: inherit;
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  cursor: pointer;
+}
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+button:disabled { opacity: 0.5; cursor: default; }
+
+table { width: 100%; border-collapse: collapse; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); }
+th { color: var(--muted); font-weight: 600; font-size: 12px; }
+
+.badge {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  border: 1px solid var(--border);
+}
+.badge.review { background: var(--review-bg); border-color: var(--review-border); color: var(--review-text); }
+
+/* 要確認の項目は一目で分かるようにする。全項目のうち直すのは数項目なのが普通 */
+.field { border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; margin-bottom: 8px; }
+.field.review { background: var(--review-bg); border-color: var(--review-border); }
+.field .head { display: flex; gap: 12px; align-items: center; }
+.field .label { width: 140px; color: var(--muted); flex-shrink: 0; }
+.field input, .field select { font: inherit; padding: 6px 8px; border: 1px solid var(--border); border-radius: 4px; flex: 1; min-width: 0; }
+.field .evidence { color: var(--muted); font-size: 12px; margin-top: 4px; padding-left: 152px; }
+.field .reasons { color: var(--review-text); font-size: 12px; margin-top: 2px; padding-left: 152px; }
+
+.muted { color: var(--muted); }
+.row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.steps { display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
+.step-ok { color: #15803d; }
+.step-failed { color: #b91c1c; }

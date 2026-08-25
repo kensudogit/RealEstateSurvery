@@ -1,0 +1,5 @@
+# scripts/ を単体で動かすための最小依存
+anthropic>=1.0          # extract_property.py
+requests>=2.31          # nearest_station.py
+python-pptx>=1.0        # pptx_fill.py
+Pillow>=10.0            # pptx_fill.py

@@ -1,0 +1,59 @@
+# スプレッドシート列マッピング。
+# コード側にハードコードしないこと。列の増減・並べ替えは業務側の都合で頻繁に起きる。
+spreadsheet_id: "1AbC..."
+worksheet: "物件一覧"
+header_row: 1
+
+# upsert のキー。この列が一致する行を更新し、無ければ追記する。
+# 追記オンリーにすると再実行のたびに同じ物件が増えるので必ず設定する。
+key_column: "メールID"
+
+# 左から順に並べる。field には property_fields.json の key、
+# stations.N.xxx で交通の N 番目、meta.xxx でメタデータを指す。
+columns:
+  - { header: "確認状態",       field: "meta.review_status" }
+  - { header: "要確認項目",     field: "meta.review_fields" }
+  - { header: "受信日時",       field: "meta.received_at" }
+  - { header: "物件名",         field: "property_name" }
+  - { header: "取引種別",       field: "deal_type" }
+  - { header: "種別",           field: "property_type" }
+  - { header: "所在地",         field: "address" }
+  - { header: "沿線1",          field: "stations.0.line" }
+  - { header: "駅1",            field: "stations.0.station" }
+  - { header: "徒歩1(分)",      field: "stations.0.walk_minutes" }
+  - { header: "沿線2",          field: "stations.1.line" }
+  - { header: "駅2",            field: "stations.1.station" }
+  - { header: "徒歩2(分)",      field: "stations.1.walk_minutes" }
+  - { header: "価格(円)",       field: "price",              format: "#,##0" }
+  - { header: "賃料(円)",       field: "monthly_rent",       format: "#,##0" }
+  - { header: "管理費(円)",     field: "management_fee",     format: "#,##0" }
+  - { header: "修繕積立金(円)", field: "repair_reserve",     format: "#,##0" }
+  - { header: "表面利回り(%)",  field: "gross_yield",        format: "0.00" }
+  - { header: "土地面積(㎡)",   field: "land_area_sqm",      format: "0.00" }
+  - { header: "建物面積(㎡)",   field: "building_area_sqm",  format: "0.00" }
+  - { header: "専有面積(㎡)",   field: "exclusive_area_sqm", format: "0.00" }
+  - { header: "間取り",         field: "floor_plan" }
+  - { header: "築年月",         field: "built_year_month" }
+  - { header: "構造",           field: "structure" }
+  - { header: "総階数",         field: "floors_total" }
+  - { header: "所在階",         field: "floor_of_unit" }
+  - { header: "総戸数",         field: "units_total" }
+  - { header: "現況",           field: "current_status" }
+  - { header: "引渡時期",       field: "delivery_time" }
+  - { header: "取引態様",       field: "transaction_type" }
+  - { header: "元付会社",       field: "source_company" }
+  - { header: "担当者",         field: "source_contact" }
+  - { header: "電話",           field: "source_phone" }
+  - { header: "備考",           field: "remarks" }
+  - { header: "メールID",       field: "meta.gmail_message_id" }
+  - { header: "件名",           field: "meta.email_subject" }
+  - { header: "元ファイル",     field: "meta.source_files" }
+  - { header: "資料URL",        field: "meta.document_url" }
+
+# 表示ルール
+rendering:
+  # value が null のセルに入れる文字列。空文字にすると「未取得」と「空欄」が
+  # 区別できなくなるので、要確認マークを入れておくと運用が楽。
+  null_placeholder: "―"
+  # needs_review が true のセルに付ける背景色（RGB）
+  review_highlight: "#FFF2CC"

@@ -1,0 +1,23 @@
+{
+  "property_type": "土地",
+  "address": "東京都練馬区",
+  "source_company": "エグザンプル・エステート",
+  "source_contact": "田中",
+  "source_email": "tanaka@example-estate.jp",
+  "property_name": null,
+  "price": null,
+  "land_area_sqm": null,
+  "building_area_sqm": null,
+  "exclusive_area_sqm": null,
+  "floor_plan": null,
+  "built_year_month": null,
+  "structure": null,
+  "floors_total": null,
+  "units_total": null,
+  "gross_yield": null,
+  "monthly_rent": null,
+  "management_fee": null,
+  "current_status": null,
+  "transaction_type": null,
+  "use_district": null
+}

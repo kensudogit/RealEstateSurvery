@@ -1,0 +1,32 @@
+# 認証情報 — 絶対にコミットしない
+.env
+.env.local
+*.json.key
+secrets/
+tokens/
+
+# データ
+data/
+backend/tests/golden/**/_cached.json
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Node
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+
+# 生成物
+*.pptx.out
+documents/
+
+# Claude Code がスキルを取り込む際に生成する成果物
+.claude/skills/*.zip

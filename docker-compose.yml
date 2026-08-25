@@ -1,0 +1,73 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
+      POSTGRES_DB: realestate
+    ports: ["5432:5432"]
+    volumes: ["pgdata:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d realestate"]
+      interval: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 10
+
+  backend:
+    build: ./backend
+    env_file: [.env]
+    environment:
+      DATABASE_URL: postgresql+psycopg://app:app@postgres:5432/realestate
+      REDIS_URL: redis://redis:6379/0
+      PROPERTY_FIELDS_PATH: /app/config/property_fields.json
+      SHEETS_COLUMN_MAP: /app/config/column_map.yaml
+    volumes:
+      - ./backend:/app
+      - ./config:/app/config:ro
+      - ./templates:/app/templates:ro
+      - ./data:/data
+    ports: ["8000:8000"]
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  worker:
+    build: ./backend
+    env_file: [.env]
+    environment:
+      DATABASE_URL: postgresql+psycopg://app:app@postgres:5432/realestate
+      REDIS_URL: redis://redis:6379/0
+      PROPERTY_FIELDS_PATH: /app/config/property_fields.json
+      SHEETS_COLUMN_MAP: /app/config/column_map.yaml
+    volumes:
+      - ./backend:/app
+      - ./config:/app/config:ro
+      - ./templates:/app/templates:ro
+      - ./data:/data
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+    # 外部 API のレート制限に当てないよう同時実行は絞る（SKILL.md 10章）
+    command: celery -A app.workers.celery_app worker --loglevel=info --concurrency=2
+
+  frontend:
+    build: ./frontend
+    environment:
+      NEXT_PUBLIC_API_BASE_URL: http://localhost:8000
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports: ["3000:3000"]
+    depends_on: [backend]
+    command: npm run dev
+
+volumes:
+  pgdata:
