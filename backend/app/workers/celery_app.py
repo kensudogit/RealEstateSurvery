@@ -24,6 +24,21 @@ celery_app.conf.update(
     task_acks_late=True,
     task_time_limit=1800,
     task_soft_time_limit=1500,
+    # ブローカーへ繋がらないとき、既定では publish が延々とリトライして
+    # API のリクエストが返らなくなる。「実行ボタンを押したまま固まる」という
+    # 一番困る壊れ方をするので、短時間で諦めて呼び出し側にエラーを返す。
+    broker_transport_options={
+        "socket_connect_timeout": 5,
+        "socket_timeout": 5,
+        "retry_on_timeout": False,
+    },
+    broker_connection_retry_on_startup=True,
+    task_publish_retry_policy={
+        "max_retries": 1,
+        "interval_start": 0,
+        "interval_step": 0.2,
+        "interval_max": 1,
+    },
 )
 
 celery_app.autodiscover_tasks(["app.workers"])

@@ -22,10 +22,11 @@ FROM node:22-alpine AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY frontend/ ./
-# NEXT_PUBLIC_ 接頭辞の変数はビルド時にバンドルへ埋め込まれる。
-# Railway では「ビルド時の変数」として設定すること。実行時に変えても効かない。
-ARG NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
-ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL
+# NEXT_PUBLIC_ の変数はここで意図的に設定しない。
+# ビルド時に焼き込まれるため、設定を忘れると localhost が埋まったまま
+# 公開されて「動いているのに全部 Failed to fetch」になる（実際に踏んだ）。
+# 既定では同一オリジンの /api/backend を経由し、Next のルートハンドラが
+# 実行時の API_BASE_URL へ中継する。
 RUN npm run build
 
 
@@ -34,6 +35,8 @@ FROM node:22-alpine AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
+# 中継先。実行時に読むので、変更してもビルドし直す必要はない。
+ENV API_BASE_URL=http://localhost:8000
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static

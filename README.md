@@ -45,16 +45,31 @@ Dockerfile はリポジトリのルートに置いてあり、**ビルドコン�
 |---|---|---|
 | API | `railway.json` | 起動時に `alembic upgrade head` を実行。`/health` でヘルスチェック |
 | ワーカー | `railway.worker.json` | 同じイメージ。起動コマンドだけ Celery に差し替え |
-| フロントエンド | `railway.frontend.json` | `NEXT_PUBLIC_API_BASE_URL` は**ビルド時**の変数に入れること |
+| フロントエンド | `railway.frontend.json` | `API_BASE_URL` に API の URL を設定（**実行時**の変数） |
 | PostgreSQL / Redis | — | Railway のテンプレートを追加 |
 
 設定する変数。
 
+API とワーカーのサービスに設定する。
+
 ```
-DATABASE_URL   = ${{Postgres.DATABASE_URL}}
-REDIS_URL      = ${{Redis.REDIS_URL}}
+DATABASE_URL      = ${{Postgres.DATABASE_URL}}
+REDIS_URL         = ${{Redis.REDIS_URL}}
 ANTHROPIC_API_KEY = sk-ant-...
 ```
+
+フロントエンドのサービスに設定する。
+
+```
+API_BASE_URL = https://<API サービスの URL>
+```
+
+ブラウザは常に同一オリジンの `/api/backend/...` を叩き、Next のルート
+ハンドラがここへ中継する。`NEXT_PUBLIC_API_BASE_URL` は**使わない**。
+あの変数はビルド時にバンドルへ焼き込まれるため、設定を忘れると localhost が
+埋まったまま公開されて「動いているのに全部 Failed to fetch」という
+一番分かりにくい壊れ方をする（実際に踏んだ）。実行時に読む `API_BASE_URL` なら
+ビルドし直さずに接続先を変えられ、同一オリジンなので CORS の設定も要らない。
 
 `DATABASE_URL` は driver 指定の無い `postgresql://` 形式で配られるが、
 アプリ側で `postgresql+psycopg://` へ正規化するのでそのまま渡してよい。

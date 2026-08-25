@@ -14,6 +14,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sse_starlette.sse import EventSourceResponse
 
+from app.api.deps import dispatch
 from app.core.db import SessionLocal, get_db
 from app.schemas import IngestRequest, JobAccepted, JobOut
 from app.services import repository
@@ -32,7 +33,8 @@ def start_ingest(request: IngestRequest, session: Session = Depends(get_db)) -> 
         session, kind="ingest", triggered_by="ui", params=request.model_dump()
     )
     session.commit()
-    tasks.ingest.delay(job.id, request.limit, request.render, request.sync_sheet)
+    dispatch(session, job, tasks.ingest,
+             job.id, request.limit, request.render, request.sync_sheet)
     return JobAccepted(job_id=job.id)
 
 
@@ -43,7 +45,7 @@ def start_reprocess(mail_id: int, session: Session = Depends(get_db)) -> JobAcce
         session, kind="reprocess", triggered_by="ui", params={"mail_id": mail_id}
     )
     session.commit()
-    tasks.reprocess.delay(job.id, mail_id)
+    dispatch(session, job, tasks.reprocess, job.id, mail_id)
     return JobAccepted(job_id=job.id)
 
 

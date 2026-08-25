@@ -78,7 +78,9 @@ services:
       dockerfile: Dockerfile.frontend
       target: dev
     environment:
-      NEXT_PUBLIC_API_BASE_URL: http://localhost:8000
+      # ブラウザは同一オリジンの /api/backend を叩き、Next がここへ中継する。
+      # コンテナ間通信なのでサービス名で解決する。
+      API_BASE_URL: http://backend:8000
     volumes:
       - ./frontend:/app
       - /app/node_modules

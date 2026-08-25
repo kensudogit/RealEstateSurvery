@@ -2,7 +2,19 @@ import type {
   AppConfig, FieldSpec, Job, PropertyDetail, PropertySummary,
 } from "./types";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+/**
+ * API の接続先。
+ *
+ * 既定は同一オリジンの /api/backend で、Next のルートハンドラが
+ * サーバ側の API_BASE_URL へ中継する。NEXT_PUBLIC_ の変数はビルド時に
+ * 焼き込まれるため、設定を忘れると localhost が埋まったまま公開されて
+ * 「動いているのに全部 Failed to fetch」という壊れ方をする。同一オリジンに
+ * しておけば、その事故が起きず CORS の設定も要らない。
+ *
+ * バックエンドを直接叩きたい場合だけ NEXT_PUBLIC_API_BASE_URL を設定する。
+ * その場合はバックエンドの CORS_ORIGINS にこの画面の URL を追加すること。
+ */
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "/api/backend";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE}${path}`, {

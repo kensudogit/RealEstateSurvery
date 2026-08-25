@@ -7,6 +7,7 @@ from fastapi.responses import FileResponse
 from pathlib import Path
 from sqlalchemy.orm import Session
 
+from app.api.deps import dispatch
 from app.core.db import get_db
 from app.models import Property
 from app.schemas import (
@@ -100,7 +101,7 @@ def rerender(property_id: int, request: RerenderRequest,
         session, kind="render", triggered_by="ui", params={"property_id": property_id}
     )
     session.commit()
-    tasks.rerender.delay(job.id, property_id, request.mark_review)
+    dispatch(session, job, tasks.rerender, job.id, property_id, request.mark_review)
     return JobAccepted(job_id=job.id)
 
 
