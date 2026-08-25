@@ -33,6 +33,39 @@ docker compose exec backend alembic upgrade head
 - API: http://localhost:8000/docs
 - UI:  http://localhost:3000
 
+## Railway へのデプロイ
+
+Dockerfile はリポジトリのルートに置いてあり、**ビルドコンテキストは常にルート**。
+`backend/` や `frontend/` の中に Dockerfile を置くと、ビルド元によって COPY の
+パスが変わって壊れるため、一本化している。
+
+必要なサービスは 4 つ。
+
+| サービス | Config Path | 備考 |
+|---|---|---|
+| API | `railway.json` | 起動時に `alembic upgrade head` を実行。`/health` でヘルスチェック |
+| ワーカー | `railway.worker.json` | 同じイメージ。起動コマンドだけ Celery に差し替え |
+| フロントエンド | `railway.frontend.json` | `NEXT_PUBLIC_API_BASE_URL` は**ビルド時**の変数に入れること |
+| PostgreSQL / Redis | — | Railway のテンプレートを追加 |
+
+設定する変数。
+
+```
+DATABASE_URL   = ${{Postgres.DATABASE_URL}}
+REDIS_URL      = ${{Redis.REDIS_URL}}
+ANTHROPIC_API_KEY = sk-ant-...
+```
+
+`DATABASE_URL` は driver 指定の無い `postgresql://` 形式で配られるが、
+アプリ側で `postgresql+psycopg://` へ正規化するのでそのまま渡してよい。
+
+**永続ボリュームを `/data` にマウントすること。** 添付ファイルと生成した
+資料の置き場で、マウントしないとデプロイのたびに消える。
+
+Railway の「Suggested Variables」は `.env.example` のプレースホルダを
+拾ったもの。`info@example.co.jp` や `1AbC...` は実在しない値なので、
+そのまま追加しないこと。項目定義やテンプレートのパスも既定値で解決する。
+
 ## 認証情報の準備
 
 | 何 | どこで取る |

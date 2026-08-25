@@ -1,3 +1,8 @@
+# ローカル開発用。
+#
+# ビルドコンテキストはリポジトリのルートで統一し、Dockerfile もルートの
+# ものを使う（デプロイ先と同じ構成にして、環境ごとの差異を減らすため）。
+# ソースはマウントするので dev ステージを指定する。
 services:
   postgres:
     image: postgres:16-alpine
@@ -21,17 +26,22 @@ services:
       retries: 10
 
   backend:
-    build: ./backend
-    env_file: [.env]
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: dev
+    env_file:
+      - path: .env
+        required: false
     environment:
       DATABASE_URL: postgresql+psycopg://app:app@postgres:5432/realestate
       REDIS_URL: redis://redis:6379/0
-      PROPERTY_FIELDS_PATH: /app/config/property_fields.json
-      SHEETS_COLUMN_MAP: /app/config/column_map.yaml
     volumes:
-      - ./backend:/app
-      - ./config:/app/config:ro
-      - ./templates:/app/templates:ro
+      # REPO_ROOT が /srv を指すので、ルートと同じ相対配置でマウントする。
+      - ./backend:/srv/backend
+      - ./config:/srv/config:ro
+      - ./templates:/srv/templates:ro
+      - ./tools:/srv/tools:ro
       - ./data:/data
     ports: ["8000:8000"]
     depends_on:
@@ -40,17 +50,21 @@ services:
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
   worker:
-    build: ./backend
-    env_file: [.env]
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: dev
+    env_file:
+      - path: .env
+        required: false
     environment:
       DATABASE_URL: postgresql+psycopg://app:app@postgres:5432/realestate
       REDIS_URL: redis://redis:6379/0
-      PROPERTY_FIELDS_PATH: /app/config/property_fields.json
-      SHEETS_COLUMN_MAP: /app/config/column_map.yaml
     volumes:
-      - ./backend:/app
-      - ./config:/app/config:ro
-      - ./templates:/app/templates:ro
+      - ./backend:/srv/backend
+      - ./config:/srv/config:ro
+      - ./templates:/srv/templates:ro
+      - ./tools:/srv/tools:ro
       - ./data:/data
     depends_on:
       postgres: {condition: service_healthy}
@@ -59,12 +73,16 @@ services:
     command: celery -A app.workers.celery_app worker --loglevel=info --concurrency=2
 
   frontend:
-    build: ./frontend
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+      target: dev
     environment:
       NEXT_PUBLIC_API_BASE_URL: http://localhost:8000
     volumes:
       - ./frontend:/app
       - /app/node_modules
+      - /app/.next
     ports: ["3000:3000"]
     depends_on: [backend]
     command: npm run dev
