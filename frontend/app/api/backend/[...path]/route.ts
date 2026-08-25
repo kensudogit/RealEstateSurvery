@@ -73,6 +73,15 @@ async function proxy(request: NextRequest, path: string[]): Promise<Response> {
   }
 
   const headers = filterHeaders(upstream.headers);
+  // このレスポンスを確かに中継したことを示す印。デプロイ先で本文が
+  // 空になるなどしたとき、プロキシを通ったのか手前で握られたのかを
+  // ヘッダだけで切り分けられる。接続先はホストのみ（認証情報は出さない）。
+  headers.set("x-proxy-upstream-status", String(upstream.status));
+  try {
+    headers.set("x-proxy-target", new URL(API_BASE_URL).host);
+  } catch {
+    headers.set("x-proxy-target", "invalid");
+  }
   // SSE を途中でバッファさせない（プロキシによっては必要）
   if (headers.get("content-type")?.includes("text/event-stream")) {
     headers.set("cache-control", "no-cache, no-transform");

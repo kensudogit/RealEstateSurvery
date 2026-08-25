@@ -13,21 +13,26 @@ export default function Dashboard() {
   const [activeJobId, setActiveJobId] = useState<number | null>(null);
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // 区画ごとの読み込みエラー。1 つの通信が失敗しても他の区画は表示する。
+  const [loadErrors, setLoadErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    Promise.all([
-      api.config(),
-      api.listJobs(5),
-      api.listProperties({ reviewOnly: true, limit: 100 }),
-    ])
-      .then(([cfg, jobList, review]) => {
-        setConfig(cfg);
-        setJobs(jobList);
-        setNeedsReview(review);
-        const running = jobList.find((job) => job.status === "running" || job.status === "queued");
-        if (running) setActiveJobId(running.id);
-      })
-      .catch((err: Error) => setError(err.message));
+    // Promise.all だと 1 つ失敗した時点で全部の値が入らず、画面が
+    // まるごと空になる。実際に /jobs だけが空応答を返したときに、
+    // ラベルも要確認件数も消えて原因が読めなくなった。
+    // 区画ごとに独立して読み、失敗はその区画にだけ出す。
+    const load = <T,>(key: string, promise: Promise<T>, apply: (value: T) => void) =>
+      promise.then(apply).catch((err: Error) =>
+        setLoadErrors((prev) => ({ ...prev, [key]: err.message })),
+      );
+
+    void load("config", api.config(), setConfig);
+    void load("review", api.listProperties({ reviewOnly: true, limit: 100 }), setNeedsReview);
+    void load("jobs", api.listJobs(5), (jobList) => {
+      setJobs(jobList);
+      const running = jobList.find((job) => job.status === "running" || job.status === "queued");
+      if (running) setActiveJobId(running.id);
+    });
   }, []);
 
   async function run() {
@@ -60,6 +65,9 @@ export default function Dashboard() {
         </div>
 
         {error && <p className="step-failed">{error}</p>}
+        {loadErrors.config && (
+          <p className="step-failed">設定の読み込みに失敗: {loadErrors.config}</p>
+        )}
         {activeJobId && (
           <div style={{ marginTop: 16, borderTop: "1px solid var(--border)", paddingTop: 12 }}>
             <JobProgress jobId={activeJobId} />
@@ -75,7 +83,9 @@ export default function Dashboard() {
           AI が読み取れなかった項目、または検算に引っかかった項目があります。
           確認せずに資料を客先へ出さないでください。
         </p>
-        {needsReview.length === 0 ? (
+        {loadErrors.review ? (
+          <p className="step-failed">読み込みに失敗: {loadErrors.review}</p>
+        ) : needsReview.length === 0 ? (
           <p className="muted">確認待ちはありません。</p>
         ) : (
           <table>
@@ -105,6 +115,9 @@ export default function Dashboard() {
 
       <section className="panel">
         <h2 style={{ marginTop: 0 }}>最近のジョブ</h2>
+        {loadErrors.jobs && (
+          <p className="step-failed">読み込みに失敗: {loadErrors.jobs}</p>
+        )}
         <table>
           <thead>
             <tr>

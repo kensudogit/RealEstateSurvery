@@ -26,7 +26,25 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     const detail = await response.text();
     throw new Error(`${response.status} ${detail}`);
   }
-  return (await response.json()) as T;
+
+  // 200 なのに本文が空、という状態が起こりうる（中継の途中で本文が
+  // 落ちるなど）。そのまま JSON.parse すると
+  // 「Unexpected end of JSON input」になり、どの通信が原因か分からない。
+  // どこで何が起きたかを名指しする。
+  const body = await response.text();
+  if (body.trim() === "") {
+    const via = response.headers.get("x-proxy-target");
+    throw new Error(
+      `${path} が空の応答を返しました（HTTP ${response.status}` +
+        (via ? `, 中継先 ${via}` : ", 中継ヘッダなし") + "）",
+    );
+  }
+
+  try {
+    return JSON.parse(body) as T;
+  } catch {
+    throw new Error(`${path} の応答を解釈できません: ${body.slice(0, 120)}`);
+  }
 }
 
 export const api = {
