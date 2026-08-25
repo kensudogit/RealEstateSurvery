@@ -1,0 +1,14 @@
+* text=auto eol=lf
+
+# シェルスクリプトが CRLF になるとコンテナ内で
+# "bad interpreter: no such file or directory" になる
+*.sh text eol=lf
+Dockerfile* text eol=lf
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.pptx binary
+*.potx binary
+*.xlsx binary
+*.pdf binary

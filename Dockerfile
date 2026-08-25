@@ -38,9 +38,12 @@ COPY backend/ /srv/backend/
 COPY config/ /srv/config/
 COPY templates/ /srv/templates/
 COPY tools/ /srv/tools/
+RUN chmod +x /srv/backend/docker-entrypoint.sh
 
 # $PORT はプラットフォームが渡す。ローカル確認用に 8000 を既定にしておく。
 ENV PORT=8000
 EXPOSE 8000
 
-CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port ${PORT}"]
+# DB の待機・マイグレーション・待ち受けアドレスの決定は entrypoint に任せる。
+# 起動できなかった理由がデプロイログに出るようにするため。
+CMD ["/srv/backend/docker-entrypoint.sh"]
