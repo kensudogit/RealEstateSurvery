@@ -39,6 +39,30 @@ app.include_router(properties.router)
 app.include_router(documents.router)
 
 
+@app.get("/", tags=["meta"])
+def index() -> dict[str, object]:
+    """ルートの案内。
+
+    ここが 404 だと、デプロイ直後にブラウザで開いた人が
+    「動いていない」と誤解する。ここは API サービスで UI は別サービスである、
+    と分かる最小限の情報を返す。
+    """
+    return {
+        "service": app.title,
+        "version": app.version,
+        "status": "ok",
+        "note": "これは API です。操作画面は別サービスのフロントエンドから開いてください。",
+        "endpoints": {
+            "docs": "/docs",
+            "health": "/health",
+            "config": "/config",
+            "properties": "/properties",
+            "field_specs": "/properties/field-specs",
+            "jobs": "/jobs",
+        },
+    }
+
+
 @app.get("/health", tags=["meta"])
 def health() -> dict[str, str]:
     return {"status": "ok"}
