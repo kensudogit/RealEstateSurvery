@@ -82,6 +82,9 @@ fi
 if [ "${SEED_SAMPLE_DATA}" = "true" ]; then
     echo "[entrypoint] サンプルデータを確認します"
     python /srv/tools/seed_sample.py || echo "[entrypoint] サンプル投入に失敗しました（起動は続行します）"
+else
+    # 設定した「つもり」で効いていない、を判別できるように必ず出す。
+    echo "[entrypoint] seed=無効（SEED_SAMPLE_DATA=true で画面にサンプルが出ます）"
 fi
 
 # ワーカーを同じコンテナで動かす。
@@ -93,6 +96,9 @@ fi
 #
 # 件数が増えてスケールさせたくなったら、ファイルの置き場を
 # オブジェクトストレージへ移してから分離する。
+if [ "${RUN_WORKER_INLINE}" != "true" ]; then
+    echo "[entrypoint] worker=別サービス（RUN_WORKER_INLINE=true で同居させられます）"
+fi
 if [ "${RUN_WORKER_INLINE}" = "true" ]; then
     CONCURRENCY="${WORKER_CONCURRENCY:-2}"
     echo "[entrypoint] ワーカーを同じコンテナで起動します（concurrency=${CONCURRENCY}）"
